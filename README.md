@@ -2,7 +2,8 @@
 
 
 ## gitlab_user
-creates, updates or deletes user accounts
+creates, updates or deletes user accounts.
+
 It uses the 'username' argument as the user identifier instead of the ansible standard 'name'
 as Gitlab uses 'name' for a different meaning.
 
