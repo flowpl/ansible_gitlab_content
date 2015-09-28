@@ -32,6 +32,8 @@ as Gitlab uses 'name' for a different meaning.
 - admin
 - can_create_group
 - state
+- ssh_key_title
+- ssh_key
 
 ##### examples
 

@@ -1,2 +1,6 @@
 .idea
-tests
+*.pyc
+ansible.cfg
+inventory
+test1.yml
+tests.txt
