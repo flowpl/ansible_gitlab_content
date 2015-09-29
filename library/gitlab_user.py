@@ -172,7 +172,7 @@ def create_or_update_user(params, check_mode):
     )
     if user_response_headers['status'] in ('201 Created', '200 OK'):
         user_exists = True
-        user = json.loads()
+        user = json.loads(user_response_body)
     else:
         # ---------------------------------------------------------------------------- user create/update failed exit
         raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
@@ -184,7 +184,7 @@ def create_or_update_user(params, check_mode):
             {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
             json.dumps({'id': user['id'], 'title': params['ssh_key_title'], 'key': params['ssh_key']})
         )
-        if ssh_response_headers not in ('200 OK', '201 Created'):
+        if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
             # ----------------------------------------------------------------------- ssh key create/update failed exit
             raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
 
