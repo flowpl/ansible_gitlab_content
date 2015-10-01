@@ -84,9 +84,9 @@ def _create_user_request_method_and_url(api_url, user):
 
 
 def _add_non_standard_params(params, raw_data):
-    '''non standard params are parameters that are spelled differently in GET and POST/PUT requests
+    """non standard params are parameters that are spelled differently in GET and POST/PUT requests
        For example 'admin' in POST/PUT requests is called 'is_admin' in GET
-    '''
+    """
     if 'admin' in params and params['admin'] is not None:
         raw_data['admin'] = params['admin']
     return raw_data
@@ -100,7 +100,8 @@ def _check_required_input_params(raw_data, user):
 
 
 def _convert_request_input_values(raw_data):
-    '''ansible accepts all kinds of values as booleans. Gitlab converts email to lower case.'''
+    """ansible accepts all kinds of values as booleans. Gitlab converts email to lower case."""
+    global ansible_module
     if 'admin' in raw_data:
         raw_data['admin'] = ansible_module.boolean(raw_data['admin'])
     if 'can_create_group' in raw_data:
