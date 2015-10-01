@@ -161,7 +161,7 @@ def create_or_update_user(params, check_mode):
     ssh_key_change = 'ssh_key' in params and ('key' not in ssh_key or ssh_key['key'] != params['ssh_key'])
     user_change = _predict_user_change(user_request_input, user)
     if check_mode or (not user_change and not ssh_key_change):
-        # ---------------------------------------------------------------------------- no change exit
+        # ---------------------------------------------------------------------------- no change or check mode exit
         return user_change or ssh_key_change
 
     user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
