@@ -66,11 +66,11 @@ def _get_ssh_key_for_user(api_url, private_token, user_id, ssh_key_title):
     )
 
     if response_headers['status'] == '200 OK':
-        available_keys = [key for key in json.loads(response_body) if key['id'] == ssh_key_title]
+        available_keys = [key for key in json.loads(response_body) if key['title'] == ssh_key_title]
         if len(available_keys) > 0:
             return available_keys[0]
 
-    return None
+    return {}
 
 
 def _create_user_request_method_and_url(api_url, user):
@@ -164,21 +164,30 @@ def create_or_update_user(params, check_mode):
         # ---------------------------------------------------------------------------- no change or check mode exit
         return user_change or ssh_key_change
 
-    user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
-    user_response_headers, user_response_body = _send_request(
-        user_method,
-        user_url,
-        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
-        json.dumps(user_request_input)
-    )
-    if user_response_headers['status'] in ('201 Created', '200 OK'):
-        user_exists = True
-        user = json.loads(user_response_body)
-    else:
-        # ---------------------------------------------------------------------------- user create/update failed exit
-        raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
+    user_exists = bool(user)
+    if user_change:
+        user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
+        user_response_headers, user_response_body = _send_request(
+            user_method,
+            user_url,
+            {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
+            json.dumps(user_request_input)
+        )
+        if user_response_headers['status'] in ('201 Created', '200 OK'):
+            user_exists = True
+            user = json.loads(user_response_body)
+        else:
+            # ------------------------------------------------------------------------ user create/update failed exit
+            raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
 
     if user_exists and ssh_key_change:
+        if ssh_key:
+            ssh_delete_response_headers, ssh_delete_response_body = _send_request(
+                'DELETE',
+                '%s/users/%d/keys/%d' % (params['api_url'], user['id'], ssh_key['id']),
+                {'PRIVATE-TOKEN': params['private_token']}
+            )
+
         ssh_response_headers, ssh_response_body = _send_request(
             'POST',
             '%s/users/%d/keys' % (params['api_url'], user['id']),

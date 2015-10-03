@@ -203,6 +203,112 @@ class UpdateUserTest(unittest.TestCase):
             send_request_mock.call_args_list[1][0][3]
         )
 
+    @mock.patch('library.gitlab_user._send_request')
+    def testCreateOrUpdateUser_ifSshKeyGivenAndNoChange_dontSendAnyUpdateRequest(self, send_request_mock):
+        send_request_mock.side_effect = (
+            ({'status': '200 OK'},
+             '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
+            ({'status': '200 OK'}, '[{"id":1,"title":"key1","key":"nvireqvtgzoufigru"}]')
+        )
+        result = library.gitlab_user.create_or_update_user(
+            {
+                'username': 'testusername',
+                'name': 'Test',
+                'email': 'someone@something.com',
+                'ssh_key_title': 'key1',
+                'ssh_key': 'nvireqvtgzoufigru',
+                'api_url': 'http://something.com/api/v3',
+                'private_token': 'abc123'
+            },
+            False
+        )
+        self.assertFalse(result)
+        self.assertEquals(2, send_request_mock.call_count)
+        self.assert_get_users_request(send_request_mock)
+        self.assert_get_ssh_keys_request(send_request_mock)
+
+    @mock.patch('library.gitlab_user._send_request')
+    def testCreateOrUpdateUser_ifSshKeyGivenAndKeyChanged_deleteKeyAndCreateNew(self, send_request_mock):
+        send_request_mock.side_effect = (
+            ({'status': '200 OK'},
+             '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
+            ({'status': '200 OK'}, '[{"id":1,"title":"key1","key":"nvireqvtgzoufigru"}]'),
+            ({'status': '200 OK'}, ''),
+            ({'status': '201 Created'}, '')
+        )
+        result = library.gitlab_user.create_or_update_user(
+            {
+                'username': 'testusername',
+                'name': 'Test',
+                'email': 'someone@something.com',
+                'ssh_key_title': 'key1',
+                'ssh_key': '0987656782356',
+                'api_url': 'http://something.com/api/v3',
+                'private_token': 'abc123'
+            },
+            False
+        )
+        self.assertTrue(result)
+        self.assertEquals(4, send_request_mock.call_count)
+        self.assert_get_users_request(send_request_mock)
+        self.assert_get_ssh_keys_request(send_request_mock)
+
+        self.assertEqual('DELETE', send_request_mock.call_args_list[2][0][0])
+        self.assertEqual({'PRIVATE-TOKEN':'abc123'},send_request_mock.call_args_list[2][0][2])
+        self.assertEqual('http://something.com/api/v3/users/12/keys/1', send_request_mock.call_args_list[2][0][1])
+
+        self.assertEqual('POST', send_request_mock.call_args_list[3][0][0])
+        self.assertEqual(
+            {'PRIVATE-TOKEN':'abc123', 'Content-Type': 'application/json'},
+            send_request_mock.call_args_list[3][0][2]
+        )
+        self.assertEqual('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[3][0][1])
+        self.assertEqual(
+            '{"id": 12, "key": "0987656782356", "title": "key1"}',
+            send_request_mock.call_args_list[3][0][3]
+        )
+
+    @mock.patch('library.gitlab_user._send_request')
+    def testCreateOrUpdateUser_ifNewSshKeyGiven_sendKeyRequest(self, send_request_mock):
+        send_request_mock.side_effect = (
+            ({'status': '200 OK'},
+             '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
+            ({'status': '200 OK'}, '[{"id":1,"title":"key1","key":"nvireqvtgzoufigru"}]'),
+            ({'status': '201 Created'}, '')
+        )
+        result = library.gitlab_user.create_or_update_user(
+            {
+                'username': 'testusername',
+                'name': 'Test',
+                'email': 'someone@something.com',
+                'ssh_key_title': 'key2',
+                'ssh_key': '0987656782356',
+                'api_url': 'http://something.com/api/v3',
+                'private_token': 'abc123'
+            },
+            False
+        )
+        self.assertTrue(result)
+        self.assertEquals(3, send_request_mock.call_count)
+        self.assert_get_users_request(send_request_mock)
+        self.assert_get_ssh_keys_request(send_request_mock)
+
+        self.assertEqual('POST', send_request_mock.call_args_list[2][0][0])
+        self.assertEqual(
+            {'PRIVATE-TOKEN':'abc123', 'Content-Type': 'application/json'},
+            send_request_mock.call_args_list[2][0][2]
+        )
+        self.assertEqual('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[2][0][1])
+        self.assertEqual(
+            '{"id": 12, "key": "0987656782356", "title": "key2"}',
+            send_request_mock.call_args_list[2][0][3]
+        )
+
+    def assert_get_ssh_keys_request(self, send_request_mock):
+        self.assertEquals('GET', send_request_mock.call_args_list[1][0][0])
+        self.assertEquals({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args_list[1][0][2])
+        self.assertEquals('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[1][0][1])
+
     def assert_get_users_request(self, send_request_mock):
         self.assertEquals('GET', send_request_mock.call_args_list[0][1]['method'])
         self.assertEquals({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args_list[0][1]['headers'])
