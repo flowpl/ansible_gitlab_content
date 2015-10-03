@@ -164,13 +164,8 @@ class UpdateUserTest(unittest.TestCase):
 
         self.assert_get_users_request(send_request_mock)
 
-    @mock.patch('library.gitlab_user.ansible_module')
     @mock.patch('library.gitlab_user._send_request')
-    def testCreateOrUpdateUser_ifAdminIsChanged_sendUpdateRequest(self, send_request_mock, ansible_module):
-
-        ansible_module.boolean = mock.MagicMock()
-        ansible_module.boolean.return_value = False
-
+    def testCreateOrUpdateUser_ifAdminIsChanged_sendUpdateRequest(self, send_request_mock):
         send_request_mock.side_effect = (
             ({'status': '200 OK'},
              '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com","is_admin":true}]'),

@@ -142,14 +142,8 @@ class CreateUserTest(unittest.TestCase):
             self.assertEquals(1, send_request_mock.call_count)
             self.assert_get_users_request(send_request_mock)
 
-    @mock.patch('library.gitlab_user.ansible_module')
     @mock.patch('library.gitlab_user._send_request')
-    def testCreateOrUpdateUser_ifNoneExistsAndAdminGiven_sendCreateUserRequests(
-            self, send_request_mock, ansible_module):
-
-        ansible_module.boolean = mock.MagicMock()
-        ansible_module.boolean.return_value = True
-
+    def testCreateOrUpdateUser_ifNoneExistsAndAdminGiven_sendCreateUserRequests(self, send_request_mock):
         send_request_mock.side_effect = (
             ({'status': '200 OK'}, '[{"username":"someuser"}]'),
             ({'status': '201 Created'}, '{"username":"testusername","id":12,"is_admin":true}')

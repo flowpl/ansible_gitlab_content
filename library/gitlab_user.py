@@ -14,7 +14,6 @@ required_user_create_params = [
 required_user_update_params = [
     'username'
 ]
-ansible_module = None
 
 
 class GitlabModuleInternalException(Exception):
@@ -73,16 +72,6 @@ def _get_ssh_key_for_user(api_url, private_token, user_id, ssh_key_title):
     return {}
 
 
-def _create_user_request_method_and_url(api_url, user):
-    if user:  # update user
-        url = '%s/users/%d' % (api_url, user['id'])
-        method = 'PUT'
-    else:  # create new user
-        url = '%s/users' % api_url
-        method = 'POST'
-    return method, url
-
-
 def _add_non_standard_params(params, raw_data):
     """non standard params are parameters that are spelled differently in GET and POST/PUT requests
        For example 'admin' in POST/PUT requests is called 'is_admin' in GET
@@ -97,18 +86,6 @@ def _check_required_input_params(raw_data, user):
     if user:
         required_params = required_user_update_params
     return len(required_params) == len([param_name for param_name in required_params if param_name in raw_data])
-
-
-def _convert_request_input_values(raw_data):
-    """ansible accepts all kinds of values as booleans. Gitlab converts email to lower case."""
-    global ansible_module
-    if 'admin' in raw_data:
-        raw_data['admin'] = ansible_module.boolean(raw_data['admin'])
-    if 'can_create_group' in raw_data:
-        raw_data['can_create_group'] = ansible_module.boolean(raw_data['can_create_group'])
-    if 'email' in raw_data:
-        raw_data['email'] = raw_data['email'].lower()
-    return raw_data
 
 
 def _predict_user_change(raw_data, user):
@@ -157,10 +134,16 @@ def _update_ssh_key(params, ssh_key, user):
 
 
 def _update_user(params, user, user_request_input):
-    user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
+    if user:  # update user
+        url = '%s/users/%d' % (params['api_url'], user['id'])
+        method = 'PUT'
+    else:  # create new user
+        url = '%s/users' % params['api_url']
+        method = 'POST'
+
     user_response_headers, user_response_body = _send_request(
-        user_method,
-        user_url,
+        method,
+        url,
         {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
         json.dumps(user_request_input)
     )
@@ -183,7 +166,6 @@ def create_or_update_user(params, check_mode):
                           in allowed_user_params
                           if param_name in params and params[param_name] is not None}
     user_request_input = _add_non_standard_params(params, user_request_input)
-    user_request_input = _convert_request_input_values(user_request_input)
 
     if not _check_required_input_params(user_request_input, user):
         raise GitlabModuleInternalException(
@@ -230,6 +212,11 @@ def main():
         required_together=[['ssh_key_title', 'ssh_key']],
         supports_check_mode=True
     )
+
+    if 'admin' in ansible_module.params:
+        ansible_module.params['admin'] = ansible_module.boolean(ansible_module.params['admin'])
+    if 'can_create_group' in ansible_module.params:
+        ansible_module.params['can_create_group'] = ansible_module.boolean(ansible_module.params['can_create_group'])
 
     try:
         changed = False
