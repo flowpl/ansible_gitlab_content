@@ -139,6 +139,38 @@ def remove_user(params, check_mode):
     raise GitlabModuleInternalException('\n'.join((headers['status'], body)))
 
 
+def _update_ssh_key(params, ssh_key, user):
+    if ssh_key:
+        _send_request(
+            'DELETE',
+            '%s/users/%d/keys/%d' % (params['api_url'], user['id'], ssh_key['id']),
+            {'PRIVATE-TOKEN': params['private_token']}
+        )
+    ssh_response_headers, ssh_response_body = _send_request(
+        'POST',
+        '%s/users/%d/keys' % (params['api_url'], user['id']),
+        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
+        json.dumps({'id': user['id'], 'title': params['ssh_key_title'], 'key': params['ssh_key']})
+    )
+    if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
+        raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
+
+
+def _update_user(params, user, user_request_input):
+    user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
+    user_response_headers, user_response_body = _send_request(
+        user_method,
+        user_url,
+        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
+        json.dumps(user_request_input)
+    )
+    if user_response_headers['status'] in ('201 Created', '200 OK'):
+        user = json.loads(user_response_body)
+    else:
+        raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
+    return user
+
+
 def create_or_update_user(params, check_mode):
     user = _find_user_by_name(params['api_url'], params['username'], params['private_token'])
     if user and 'ssh_key_title' in params:
@@ -161,44 +193,13 @@ def create_or_update_user(params, check_mode):
     ssh_key_change = 'ssh_key' in params and ('key' not in ssh_key or ssh_key['key'] != params['ssh_key'])
     user_change = _predict_user_change(user_request_input, user)
     if check_mode or (not user_change and not ssh_key_change):
-        # ---------------------------------------------------------------------------- no change or check mode exit
         return user_change or ssh_key_change
 
-    user_exists = bool(user)
     if user_change:
-        user_method, user_url = _create_user_request_method_and_url(params['api_url'], user)
-        user_response_headers, user_response_body = _send_request(
-            user_method,
-            user_url,
-            {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
-            json.dumps(user_request_input)
-        )
-        if user_response_headers['status'] in ('201 Created', '200 OK'):
-            user_exists = True
-            user = json.loads(user_response_body)
-        else:
-            # ------------------------------------------------------------------------ user create/update failed exit
-            raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
+        user = _update_user(params, user, user_request_input)
+    if user and ssh_key_change:
+        _update_ssh_key(params, ssh_key, user)
 
-    if user_exists and ssh_key_change:
-        if ssh_key:
-            _send_request(
-                'DELETE',
-                '%s/users/%d/keys/%d' % (params['api_url'], user['id'], ssh_key['id']),
-                {'PRIVATE-TOKEN': params['private_token']}
-            )
-
-        ssh_response_headers, ssh_response_body = _send_request(
-            'POST',
-            '%s/users/%d/keys' % (params['api_url'], user['id']),
-            {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
-            json.dumps({'id': user['id'], 'title': params['ssh_key_title'], 'key': params['ssh_key']})
-        )
-        if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
-            # ----------------------------------------------------------------------- ssh key create/update failed exit
-            raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
-
-    # ------------------------------------------------------------------------------- all OK exit
     return True
 
 
