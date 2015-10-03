@@ -182,7 +182,7 @@ def create_or_update_user(params, check_mode):
 
     if user_exists and ssh_key_change:
         if ssh_key:
-            ssh_delete_response_headers, ssh_delete_response_body = _send_request(
+            _send_request(
                 'DELETE',
                 '%s/users/%d/keys/%d' % (params['api_url'], user['id'], ssh_key['id']),
                 {'PRIVATE-TOKEN': params['private_token']}

@@ -49,7 +49,8 @@ class UpdateUserTest(unittest.TestCase):
     @mock.patch('library.gitlab_user._send_request')
     def testCreateOrUpdateUser_ifUserIsNotChangedAndPasswordGiven_sendUpdateRequest(self, send_request_mock):
         send_request_mock.side_effect = (
-            ({'status': '200 OK'}, '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
+            ({'status': '200 OK'},
+             '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
             ({'status': '200 OK'}, '{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}')
         )
         result = library.gitlab_user.create_or_update_user(
@@ -254,12 +255,12 @@ class UpdateUserTest(unittest.TestCase):
         self.assert_get_ssh_keys_request(send_request_mock)
 
         self.assertEqual('DELETE', send_request_mock.call_args_list[2][0][0])
-        self.assertEqual({'PRIVATE-TOKEN':'abc123'},send_request_mock.call_args_list[2][0][2])
+        self.assertEqual({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args_list[2][0][2])
         self.assertEqual('http://something.com/api/v3/users/12/keys/1', send_request_mock.call_args_list[2][0][1])
 
         self.assertEqual('POST', send_request_mock.call_args_list[3][0][0])
         self.assertEqual(
-            {'PRIVATE-TOKEN':'abc123', 'Content-Type': 'application/json'},
+            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
             send_request_mock.call_args_list[3][0][2]
         )
         self.assertEqual('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[3][0][1])
@@ -295,7 +296,7 @@ class UpdateUserTest(unittest.TestCase):
 
         self.assertEqual('POST', send_request_mock.call_args_list[2][0][0])
         self.assertEqual(
-            {'PRIVATE-TOKEN':'abc123', 'Content-Type': 'application/json'},
+            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
             send_request_mock.call_args_list[2][0][2]
         )
         self.assertEqual('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[2][0][1])
