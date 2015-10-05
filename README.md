@@ -7,33 +7,41 @@ creates, updates or deletes user accounts.
 It uses the 'username' argument as the user identifier instead of the ansible standard 'name'
 as Gitlab uses 'name' for a different meaning.
 
-##### always required arguments
+##### arguments
 
-- username
-- private_token
-- api_url
 
-##### arguments required on user create and optional on user update
+> username
 
-- name
-- email
-- password
+required: always
 
-##### optional arguments
+the name used to identify a gitlab user. The gitlab_user module uses this as the user
+identifier instead of the ansible default 'name' as 'name' has a different meaning in Gitlab
 
-- skype
-- linkedin
-- twitter
-- website_url
-- projects_limit
-- extern_uid
-- provider
-- bio
-- admin
-- can_create_group
-- state
-- ssh_key_title
-- ssh_key
+> private_token
+
+the private token used for api authentication
+required: always
+
+> api_url
+
+the URL fo the Gitlab API. e.g. http://gitlab-internal.somedomain.com/api/v3
+required: always
+
+> name
+email
+password
+skype
+linkedin
+twitter
+website_url
+projects_limit
+extern_uid
+bio
+admin
+can_create_group
+state
+ssh_key_title
+ssh_key
 
 ##### examples
 

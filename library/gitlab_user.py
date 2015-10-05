@@ -1,6 +1,137 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: gitlab_user
+short_description: create , update or delete a user account in Gitlab
+options:
+  username:
+    description: The username to identify the account being altered
+    required: yes
+    default: none
+    choices: []
+  private_token:
+    description: The private_token used for API authentication, it must belong to an admin user. Login to Gitlab and go to I(profile settings -> account) to find the private token.
+    required: yes
+    default: none
+    choices: []
+  api_url:
+    description: the URL of the Gitlab API. e.g. U(http://gitlab.somedomain.com/api/v3)
+    required: yes
+    default: none
+    choices: []
+  name:
+    description: the user's full name
+    required: yes if the account does not exist yet
+    default: none
+    choices: []
+  email:
+    description: the user's email. This module only supports one email address per user. See the M(gitlab_email) module if you need more.
+    required: yes if the account does not exist yet
+    default: none
+    choices: []
+  password:
+    description: the user's password. Be aware that if password is set, the module will always send an update request to Gitlab, regardless of whether something changed or not.
+    required: yes if the account does not exist yet
+    default: none
+    choices: []
+  skype:
+    description: The user's skype
+    required: no
+    default: none
+    choices: []
+  linkedin:
+    description: The user's linkedin profile
+    required: no
+    default: none
+    choices: []
+  twitter:
+    description: The user's Twitter name
+    required: no
+    default: none
+    choices: []
+  website_url:
+    description: The users website URL
+    required: no
+    default: none
+    choices: []
+  projects_limit:
+    description: The users project limit. The default is none so the Gitlab default project_limit is used.
+    required: no
+    default: none
+    choices: []
+  bio:
+    description: The users biographic text
+    required: no
+    default: none
+    choices: []
+  admin:
+    description: whether the user is an admin user
+    required: no
+    default: no
+    choices: [yes, no]
+  can_create_group:
+    description: whether the user can create groups. The default is none so the Gitlab default can_create_group is used.
+    required: no
+    default: none
+    choices: [yes, no]
+  state:
+    description:
+    required: no
+    default: present
+    choices: [present, absent]
+  ssh_key_title:
+    description: The title for the ssh key.
+    required: yes if ssh_key is given
+    default: none
+    choices: []
+  ssh_key:
+    description: An SSH public key as a string. This module only supports one SSH key per user. See the M(gitlab_pubkey) module if you need more.
+    required: no
+    default: none
+    choices: []
+'''
+
+EXAMPLES = '''
+# create a new user, given that username is not yet used
+- gitlab_user:
+    username: test
+    password: abc123yz
+    name: some name
+    email: someone@something.com
+    api_url: https://gitlab-url-internal.somedomain.com/api/v3
+    private_token: 7389rz478
+    state: present
+
+
+# change user test's email
+- gitlab_user:
+    username: test
+    email: someone_else@something.com
+    api_url: https://gitlab-url-internal.somedomain.com/api/v3
+    private_token: 7389rz478
+    state: present
+
+
+# delete the user 'test'
+- gitlab_user:
+    username: test
+    api_url: https://gitlab-url-internal.somedomain.com/api/v3
+    private_token: 7389rz478
+    state: absent
+
+
+# add / update an ssh pubkey
+- gitlab_user:
+    username: test
+    ssh_key_title: first_ssh_key
+    ssh_key: lookup('file', '/some/path/id_rsa.pub')
+    api_url: https://gitlab-url-internal.somedomain.com/api/v3
+    private_token: 7389rz478
+    state: present
+'''
+
 import ansible.module_utils.urls as urls
 import urllib2
 
