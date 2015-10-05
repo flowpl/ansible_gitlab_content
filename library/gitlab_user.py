@@ -5,7 +5,7 @@ import ansible.module_utils.urls as urls
 import urllib2
 
 allowed_user_params = [
-    'email', 'password', 'username', 'name', 'skype', 'linkedin', 'twitter', 'website_url', 'projects_limit',
+    'password', 'username', 'name', 'skype', 'linkedin', 'twitter', 'website_url', 'projects_limit',
     'extern_uid', 'provider', 'bio', 'can_create_group'
 ]
 required_user_create_params = [
@@ -38,6 +38,18 @@ def _send_request(method, url, headers, body=None):
         if 'message' in dir(e.reason):
             raise GitlabModuleInternalException(e.reason.message)
         raise GitlabModuleInternalException(e.reason + '\n' + e.read())
+
+
+def _get_email_id(api_url, user_id, private_token, email):
+    headers, body = _send_request('GET', '%s/users/%d/emails' % (api_url, user_id), {'PRIVATE-TOKEN': private_token})
+    if headers['status'] != '200 OK':
+        return None
+
+    for tmp_email in json.loads(body):
+        if tmp_email['email'] == email.lower():  # gitlab converts email addresses to lower case
+            return tmp_email['id']
+
+    return None
 
 
 def _find_user_by_name(api_url, username, private_token):
@@ -78,6 +90,8 @@ def _add_non_standard_params(params, raw_data):
     """
     if 'admin' in params and params['admin'] is not None:
         raw_data['admin'] = params['admin']
+    if 'email' in params and params['email'] is not None:
+        raw_data['email'] = params['email']
     return raw_data
 
 
@@ -95,6 +109,67 @@ def _predict_user_change(raw_data, user):
                  in allowed_user_params
                  if (param_name in user and param_name in raw_data and user[param_name] != raw_data[param_name])
                  or (param_name not in user and param_name in raw_data)])
+
+
+def _update_ssh_key(api_url, private_token, ssh_key_id, ssh_key_title, ssh_key, user_id):
+    if ssh_key_id:
+        _send_request(
+            'DELETE',
+            '%s/users/%d/keys/%d' % (api_url, user_id, ssh_key_id),
+            {'PRIVATE-TOKEN': private_token}
+        )
+    ssh_response_headers, ssh_response_body = _send_request(
+        'POST',
+        '%s/users/%d/keys' % (api_url, user_id),
+        {'PRIVATE-TOKEN': private_token, 'Content-Type': 'application/json'},
+        json.dumps({'id': user_id, 'title': ssh_key_title, 'key': ssh_key})
+    )
+    if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
+        raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
+
+
+def _update_user(params, user, user_request_input):
+    if user:  # update user
+        url = '%s/users/%d' % (params['api_url'], user['id'])
+        method = 'PUT'
+        del user_request_input['email']  # email update is handled separately in _update_email
+        # in fact: including email in user update requests has no effect
+    else:  # create new user
+        url = '%s/users' % params['api_url']
+        method = 'POST'
+
+    user_response_headers, user_response_body = _send_request(
+        method,
+        url,
+        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
+        json.dumps(user_request_input)
+    )
+    if user_response_headers['status'] in ('201 Created', '200 OK'):
+        user = json.loads(user_response_body)
+    else:
+        raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
+    return user
+
+
+def _update_email(api_url, private_token, user_id, email_id, email):
+    delete_response_headers, delete_response_body = _send_request(
+        'DELETE',
+        '%s/users/%d/emails/%d' % (api_url, user_id, email_id),
+        {'PRIVATE-TOKEN': private_token}
+    )
+    if delete_response_headers['status'] != '200 OK':
+        raise GitlabModuleInternalException('\n'.join((delete_response_headers['status'], delete_response_body)))
+
+    create_response_header, create_response_body = _send_request(
+        'POST',
+        '%s/users/%d/emails' % (api_url, user_id),
+        {'PRIVATE-TOKEN': private_token, 'Content-Type': 'application/json'},
+        json.dumps({'id': user_id, 'email': email})
+    )
+    if create_response_header['status'] != '201 Created':
+        raise GitlabModuleInternalException('\n'.join((create_response_header['status'], create_response_body)))
+
+    return True
 
 
 def remove_user(params, check_mode):
@@ -116,50 +191,16 @@ def remove_user(params, check_mode):
     raise GitlabModuleInternalException('\n'.join((headers['status'], body)))
 
 
-def _update_ssh_key(params, ssh_key, user):
-    if ssh_key:
-        _send_request(
-            'DELETE',
-            '%s/users/%d/keys/%d' % (params['api_url'], user['id'], ssh_key['id']),
-            {'PRIVATE-TOKEN': params['private_token']}
-        )
-    ssh_response_headers, ssh_response_body = _send_request(
-        'POST',
-        '%s/users/%d/keys' % (params['api_url'], user['id']),
-        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
-        json.dumps({'id': user['id'], 'title': params['ssh_key_title'], 'key': params['ssh_key']})
-    )
-    if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
-        raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
-
-
-def _update_user(params, user, user_request_input):
-    if user:  # update user
-        url = '%s/users/%d' % (params['api_url'], user['id'])
-        method = 'PUT'
-    else:  # create new user
-        url = '%s/users' % params['api_url']
-        method = 'POST'
-
-    user_response_headers, user_response_body = _send_request(
-        method,
-        url,
-        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
-        json.dumps(user_request_input)
-    )
-    if user_response_headers['status'] in ('201 Created', '200 OK'):
-        user = json.loads(user_response_body)
-    else:
-        raise GitlabModuleInternalException('\n'.join((user_response_headers['status'], user_response_body)))
-    return user
-
-
 def create_or_update_user(params, check_mode):
     user = _find_user_by_name(params['api_url'], params['username'], params['private_token'])
     if user and 'ssh_key_title' in params:
         ssh_key = _get_ssh_key_for_user(params['api_url'], params['private_token'], user['id'], params['ssh_key_title'])
     else:
         ssh_key = {}
+
+    email_change = False
+    if 'email' in params and user and user['email'] != params['email']:
+        email_change = True
 
     user_request_input = {param_name: params[param_name]
                           for param_name
@@ -174,13 +215,28 @@ def create_or_update_user(params, check_mode):
 
     ssh_key_change = 'ssh_key' in params and ('key' not in ssh_key or ssh_key['key'] != params['ssh_key'])
     user_change = _predict_user_change(user_request_input, user)
-    if check_mode or (not user_change and not ssh_key_change):
+    if check_mode or (not user_change and not ssh_key_change and not email_change):
         return user_change or ssh_key_change
 
     if user_change:
         user = _update_user(params, user, user_request_input)
     if user and ssh_key_change:
-        _update_ssh_key(params, ssh_key, user)
+        _update_ssh_key(
+            params['api_url'],
+            params['private_token'],
+            ssh_key['id'] if ssh_key and 'id' in ssh_key else None,
+            params['ssh_key_title'],
+            params['ssh_key'],
+            user['id']
+        )
+    if email_change:
+        _update_email(
+            params['api_url'],
+            params['private_token'],
+            user['id'],
+            _get_email_id(params['api_url'], user['id'], params['private_token'], user['email']),
+            params['email']
+        )
 
     return True
 

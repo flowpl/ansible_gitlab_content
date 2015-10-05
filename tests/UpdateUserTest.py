@@ -76,7 +76,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "password": "9876abc123", "email": "someone@something.com", "name": "Test"}',
+            '{"username": "testusername", "password": "9876abc123", "name": "Test"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -136,7 +136,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "password": "9876abc123", "email": "someone@something.com", "name": "someOtherName"}',
+            '{"username": "testusername", "password": "9876abc123", "name": "someOtherName"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -177,7 +177,7 @@ class UpdateUserTest(unittest.TestCase):
                 'username': 'testusername',
                 'name': 'someOtherName',
                 'email': 'someone@something.com',
-                'admin': 'false',
+                'admin': False,
                 'api_url': 'http://something.com/api/v3',
                 'private_token': 'abc123'
             },
@@ -195,7 +195,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "admin": false, "email": "someone@something.com", "name": "someOtherName"}',
+            '{"username": "testusername", "admin": false, "name": "someOtherName"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -298,6 +298,48 @@ class UpdateUserTest(unittest.TestCase):
         self.assertEqual(
             '{"id": 12, "key": "0987656782356", "title": "key2"}',
             send_request_mock.call_args_list[2][0][3]
+        )
+
+    @mock.patch('library.gitlab_user._send_request')
+    def testCreateOrUpdateUser_ifEmailGivenAndChanged_deleteEmailFromUserResponseAndSendNew(self, send_request_mock):
+        send_request_mock.side_effect = (
+            ({'status': '200 OK'},
+             '[{"username":"testusername","id":12,"name":"Test","email":"someone@something.com"}]'),
+            ({'status': '200 OK'}, '[{"id":1,"email":"someone@something.com"}]'),
+            ({'status': '200 OK'}, ''),
+            ({'status': '201 Created'}, '')
+        )
+        result = library.gitlab_user.create_or_update_user(
+            {
+                'username': 'testusername',
+                'name': 'Test',
+                'email': 'someoneelse@somethingelse.net',
+                'api_url': 'http://something.com/api/v3',
+                'private_token': 'abc123'
+            },
+            False
+        )
+        self.assertTrue(result)
+        self.assertEquals(4, send_request_mock.call_count)
+        self.assert_get_users_request(send_request_mock)
+
+        self.assertEqual('GET', send_request_mock.call_args_list[1][0][0])
+        self.assertEqual({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args_list[1][0][2])
+        self.assertEqual('http://something.com/api/v3/users/12/emails', send_request_mock.call_args_list[1][0][1])
+
+        self.assertEqual('DELETE', send_request_mock.call_args_list[2][0][0])
+        self.assertEqual({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args_list[2][0][2])
+        self.assertEqual('http://something.com/api/v3/users/12/emails/1', send_request_mock.call_args_list[2][0][1])
+
+        self.assertEqual('POST', send_request_mock.call_args_list[3][0][0])
+        self.assertEqual(
+            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
+            send_request_mock.call_args_list[3][0][2]
+        )
+        self.assertEqual('http://something.com/api/v3/users/12/emails', send_request_mock.call_args_list[3][0][1])
+        self.assertEqual(
+            '{"id": 12, "email": "someoneelse@somethingelse.net"}',
+            send_request_mock.call_args_list[3][0][3]
         )
 
     def assert_get_ssh_keys_request(self, send_request_mock):

@@ -154,7 +154,7 @@ class CreateUserTest(unittest.TestCase):
                 'name': 'Test',
                 'email': 'someone@something.com',
                 'password': '98765btzf',
-                'admin': 'True',
+                'admin': True,
                 'api_url': 'http://something.com/api/v3',
                 'private_token': 'abc123'
             },
@@ -171,7 +171,7 @@ class CreateUserTest(unittest.TestCase):
         )
         self.assertEquals('POST', send_request_mock.call_args_list[1][0][0])
         self.assertEquals(
-            '{"username": "testusername", "admin": true, "password": "98765btzf", "email": "someone@something.com", "name": "Test"}',
+            '{"username": "testusername", "admin": true, "password": "98765btzf", "name": "Test", "email": "someone@something.com"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -191,6 +191,6 @@ class CreateUserTest(unittest.TestCase):
         )
         self.assertEquals('POST', send_request_mock.call_args_list[1][0][0])
         self.assertEquals(
-            '{"username": "testusername", "password": "98765btzf", "email": "someone@something.com", "name": "Test"}',
+            '{"username": "testusername", "password": "98765btzf", "name": "Test", "email": "someone@something.com"}',
             send_request_mock.call_args_list[1][0][3]
         )
