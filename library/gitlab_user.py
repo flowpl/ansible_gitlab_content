@@ -370,7 +370,6 @@ def create_or_update_user(params, check_mode):
 
 
 def main():
-    global ansible_module
     ansible_module = AnsibleModule(
         argument_spec=dict(
             username=dict(required=True),

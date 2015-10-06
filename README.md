@@ -8,6 +8,8 @@ A collection of ansible modules to add content to a running gitlab installation 
 ## gitlab_user
 creates, updates or deletes user accounts.
 
+The module supports only one email address and one ssh pubkey per user account. See gitlab_email and gitlab_pubkey if you need more.
+
 It uses the 'username' argument as the user identifier instead of the ansible standard 'name'
 as Gitlab uses 'name' for a different meaning.
 
