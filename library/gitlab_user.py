@@ -168,7 +168,7 @@ def _send_request(method, url, headers, body=None):
     except urllib2.URLError as e:
         if 'message' in dir(e.reason):
             raise GitlabModuleInternalException(e.reason.message)
-        raise GitlabModuleInternalException(e.reason + '\n' + e.read())
+        raise GitlabModuleInternalException('\n'.join([e.reason, e.read()]))
 
 
 def _get_email_id(api_url, user_id, private_token, email):
