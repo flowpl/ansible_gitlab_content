@@ -1,4 +1,6 @@
-# Ansible Modules to manage Gitlab
+# Ansible Modules to manage Gitlab Content
+
+A collection of ansible modules to add content to a running gitlab installation via it's REST API.
 
 
 ## gitlab_user
