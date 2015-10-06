@@ -173,12 +173,11 @@ def _send_request(method, url, headers, body=None):
 
 def _get_email_id(api_url, user_id, private_token, email):
     headers, body = _send_request('GET', '%s/users/%d/emails' % (api_url, user_id), {'PRIVATE-TOKEN': private_token})
-    if headers['status'] != '200 OK':
-        return None
 
-    for tmp_email in json.loads(body):
-        if tmp_email['email'] == email.lower():  # gitlab converts email addresses to lower case
-            return tmp_email['id']
+    if headers['status'] == '200 OK':
+        for tmp_email in json.loads(body):
+            if tmp_email['email'] == email.lower():  # gitlab converts email addresses to lower case
+                return tmp_email['id']
 
     return None
 
