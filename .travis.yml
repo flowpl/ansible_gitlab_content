@@ -5,4 +5,4 @@ install:
   - pip install mock ddt nose ansible
 
 script:
-  - nosetests --all-modules
+  - nosetests --all-modules --with-coverage

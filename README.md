@@ -2,6 +2,7 @@
 
 A collection of ansible modules to add content to a running gitlab installation via it's REST API.
 
+![Travis build status](https://travis-ci.org/flowpl/ansible_gitlab_content.svg?branch=master)
 
 ## gitlab_user
 creates, updates or deletes user accounts.
