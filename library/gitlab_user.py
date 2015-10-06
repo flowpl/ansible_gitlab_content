@@ -190,13 +190,11 @@ def _find_user_by_name(api_url, username, private_token):
         headers={'PRIVATE-TOKEN': private_token}
     )
 
-    try:
+    if headers['status'] == '200 OK':
         content = json.loads(body)
         for user in content:
             if user['username'] == username:
                 return user
-    except:
-        pass
 
     return None
 
@@ -299,7 +297,7 @@ def _update_email(api_url, private_token, user_id, email_id, email):
     )
     if create_response_header['status'] == '201 Created':
         return True
-    
+
     raise GitlabModuleInternalException('\n'.join((create_response_header['status'], create_response_body)))
 
 
