@@ -171,7 +171,7 @@ def _send_request(method, url, headers, body=None):
         raise GitlabModuleInternalException('\n'.join([e.reason, e.read()]))
 
 
-def _get_email_id(api_url, user_id, private_token, email):
+def _get_email_id(api_url, private_token, user_id, email):
     headers, body = _send_request('GET', '%s/users/%d/emails' % (api_url, user_id), {'PRIVATE-TOKEN': private_token})
 
     if headers['status'] == '200 OK':
@@ -182,7 +182,7 @@ def _get_email_id(api_url, user_id, private_token, email):
     return None
 
 
-def _find_user_by_name(api_url, username, private_token):
+def _find_user_by_name(api_url, private_token, username):
     headers, body = _send_request(
         url=api_url + '/users',
         method='GET',
@@ -228,7 +228,10 @@ def _check_required_input_params(raw_data, user):
     required_params = required_user_create_params
     if user:
         required_params = required_user_update_params
-    return len(required_params) == len([param_name for param_name in required_params if param_name in raw_data])
+    for param in required_params:
+        if param not in raw_data:
+            return False
+    return True
 
 
 def _predict_user_change(raw_data, user):
@@ -301,7 +304,7 @@ def _update_email(api_url, private_token, user_id, email_id, email):
 
 
 def remove_user(params, check_mode):
-    user = _find_user_by_name(params['api_url'], params['username'], params['private_token'])
+    user = _find_user_by_name(params['api_url'], params['private_token'], params['username'])
 
     change = bool(user)
     if check_mode or not change:
@@ -320,7 +323,7 @@ def remove_user(params, check_mode):
 
 
 def create_or_update_user(params, check_mode):
-    user = _find_user_by_name(params['api_url'], params['username'], params['private_token'])
+    user = _find_user_by_name(params['api_url'], params['private_token'], params['username'])
     if user and 'ssh_key_title' in params:
         ssh_key = _get_ssh_key_for_user(params['api_url'], params['private_token'], user['id'], params['ssh_key_title'])
     else:
@@ -362,7 +365,7 @@ def create_or_update_user(params, check_mode):
             params['api_url'],
             params['private_token'],
             user['id'],
-            _get_email_id(params['api_url'], user['id'], params['private_token'], user['email']),
+            _get_email_id(params['api_url'], params['private_token'], user['id'], user['email']),
             params['email']
         )
 
