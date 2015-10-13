@@ -235,12 +235,16 @@ def _check_required_input_params(raw_data, user):
 
 
 def _predict_user_change(raw_data, user):
-    return not user or ('admin' in raw_data and 'is_admin' in user and raw_data['admin'] != user['is_admin']) or \
-        0 < len([param_name
-                 for param_name
-                 in allowed_user_params
-                 if (param_name in user and param_name in raw_data and user[param_name] != raw_data[param_name])
-                 or (param_name not in user and param_name in raw_data)])
+    if not user:
+        return True
+    if 'admin' in raw_data and 'is_admin' in user and raw_data['admin'] != user['is_admin']:
+        return True
+    for param_name in allowed_user_params:
+        if param_name not in user and param_name in raw_data:
+            return True
+        if param_name in user and param_name in raw_data and user[param_name] != raw_data[param_name]:
+            return True
+    return False
 
 
 def _update_ssh_key(api_url, private_token, ssh_key_id, ssh_key_title, ssh_key, user_id):
