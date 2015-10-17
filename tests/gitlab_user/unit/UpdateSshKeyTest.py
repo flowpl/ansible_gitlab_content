@@ -36,7 +36,10 @@ class UpdateSshKeyTest(unittest.TestCase):
 
     @mock.patch('library.gitlab_user._send_request')
     def testUpdateExistingSshKey(self, send_request_mock):
-        send_request_mock.return_value = {'status': '201 Created'}, ''
+        send_request_mock.side_effect = (
+            ({'status': '200 OK'}, ''),
+            ({'status': '201 Created'}, '')
+        )
 
         library.gitlab_user._update_ssh_key(
             'http://somedomain.com/api/v3',
