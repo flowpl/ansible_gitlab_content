@@ -50,13 +50,13 @@ class UpdateEmailTest(unittest.TestCase):
                 'http://somedomain.com/api/v3',
                 '576932',
                 12,
-                None,
+                1,
                 'someone@something.com'
             )
         self.assertEquals("500 Internal Server Error\nsome message", ex.exception.message)
 
     @mock.patch('library.gitlab_user._send_request')
-    def testGitlabApiRespondsWithErrorOnDelete(self, send_request_mock):
+    def testGitlabApiRespondsWithErrorOnCreate(self, send_request_mock):
         send_request_mock.side_effect = (
             ({'status': '200 OK'}, ''),
             ({'status': '500 Internal Server Error'}, 'some message')
