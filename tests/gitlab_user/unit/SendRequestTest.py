@@ -44,7 +44,7 @@ class GitlabUserSendRequestTest(unittest.TestCase):
                 'something'
             )
 
-            self.assertEqual('GitlabUserSendRequestTest.testRequestFailed\nsome message', ex.message)
+        self.assertEqual('GitlabUserSendRequestTest.testRequestFailedWithReadableException\nsome message', ex.exception.message)
 
     @mock.patch('ansible.module_utils.urls.open_url')
     def testRequestFailedWithReasonMessage(self, open_url_mock):
@@ -60,4 +60,4 @@ class GitlabUserSendRequestTest(unittest.TestCase):
                 'something'
             )
 
-            self.assertEqual('GitlabUserSendRequestTest.testRequestFailed\nsome message', ex.message)
+        self.assertEqual('GitlabUserSendRequestTest.testRequestFailedWithReasonMessage', ex.exception.message)

@@ -247,7 +247,7 @@ def _predict_user_change(raw_data, user):
     return False
 
 
-def _update_ssh_key(api_url, private_token, ssh_key_id, ssh_key_title, ssh_key, user_id):
+def _update_ssh_key(api_url, private_token, user_id, ssh_key_id, ssh_key_title, ssh_key):
     if ssh_key_id:
         _send_request(
             'DELETE',
@@ -260,7 +260,7 @@ def _update_ssh_key(api_url, private_token, ssh_key_id, ssh_key_title, ssh_key, 
         {'PRIVATE-TOKEN': private_token, 'Content-Type': 'application/json'},
         json.dumps({'id': user_id, 'title': ssh_key_title, 'key': ssh_key})
     )
-    if ssh_response_headers['status'] not in ('200 OK', '201 Created'):
+    if ssh_response_headers['status'] != '201 Created':
         raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
 
 
@@ -356,14 +356,9 @@ def create_or_update_user(params, check_mode):
     if user_change:
         user = _update_user(params, user, user_request_input)
     if user and ssh_key_change:
-        _update_ssh_key(
-            params['api_url'],
-            params['private_token'],
-            ssh_key['id'] if ssh_key and 'id' in ssh_key else None,
-            params['ssh_key_title'],
-            params['ssh_key'],
-            user['id']
-        )
+        _update_ssh_key(params['api_url'], params['private_token'], user['id'],
+                        ssh_key['id'] if ssh_key and 'id' in ssh_key else None, params['ssh_key_title'],
+                        params['ssh_key'])
     if email_change:
         _update_email(
             params['api_url'],
