@@ -264,20 +264,21 @@ def _update_ssh_key(api_url, private_token, user_id, ssh_key_id, ssh_key_title, 
         raise GitlabModuleInternalException('\n'.join((ssh_response_headers['status'], ssh_response_body)))
 
 
-def _update_user(params, user, user_request_input):
-    if user:  # update user
-        url = '%s/users/%d' % (params['api_url'], user['id'])
+def _update_user(api_url, private_token, user_id, user_request_input):
+    if user_id:  # update user
+        url = '%s/users/%d' % (api_url, user_id)
         method = 'PUT'
+        del user_request_input['username']  # usernames cannot change
         del user_request_input['email']  # email update is handled separately in _update_email
-        # in fact: including email in user update requests has no effect
+        # in fact, including email in user update requests has no effect, regardless of what the docs say
     else:  # create new user
-        url = '%s/users' % params['api_url']
+        url = '%s/users' % api_url
         method = 'POST'
 
     user_response_headers, user_response_body = _send_request(
         method,
         url,
-        {'PRIVATE-TOKEN': params['private_token'], 'Content-Type': 'application/json'},
+        {'PRIVATE-TOKEN': private_token, 'Content-Type': 'application/json'},
         json.dumps(user_request_input)
     )
     if user_response_headers['status'] in ('201 Created', '200 OK'):
@@ -354,7 +355,12 @@ def create_or_update_user(params, check_mode):
         return user_change or ssh_key_change
 
     if user_change:
-        user = _update_user(params, user, user_request_input)
+        user = _update_user(
+            params['api_url'],
+            params['private_token'],
+            user['id'] if user else None,
+            user_request_input
+        )
     if user and ssh_key_change:
         _update_ssh_key(params['api_url'], params['private_token'], user['id'],
                         ssh_key['id'] if ssh_key and 'id' in ssh_key else None, params['ssh_key_title'],

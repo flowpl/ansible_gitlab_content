@@ -76,7 +76,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "password": "9876abc123", "name": "Test"}',
+            '{"password": "9876abc123", "name": "Test"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -136,7 +136,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "password": "9876abc123", "name": "someOtherName"}',
+            '{"password": "9876abc123", "name": "someOtherName"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
@@ -195,7 +195,7 @@ class UpdateUserTest(unittest.TestCase):
         )
         self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args_list[1][0][1])
         self.assertEquals(
-            '{"username": "testusername", "admin": false, "name": "someOtherName"}',
+            '{"admin": false, "name": "someOtherName"}',
             send_request_mock.call_args_list[1][0][3]
         )
 
