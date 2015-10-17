@@ -27,9 +27,6 @@ class CreateUserTest(unittest.TestCase):
             False
         )
         self.assertTrue(result)
-        self.assertEquals(2, send_request_mock.call_count)
-        self.assert_get_users_request(send_request_mock)
-        self.assert_create_user_request(send_request_mock)
 
     @mock.patch('library.gitlab_user._send_request')
     def testCreateOrUpdateUser_ifNoneExistsAndCheckMode_dontSendRequest(self, send_request_mock):
@@ -46,7 +43,6 @@ class CreateUserTest(unittest.TestCase):
             True
         )
         self.assertTrue(result)
-        self.assertEquals(1, send_request_mock.call_count)
 
     @mock.patch('library.gitlab_user._send_request')
     def testCreateOrUpdateUser_ifNoneExistsAndSshKeyGiven_sendCreateUserAndAddSshKeyRequests(self, send_request_mock):
@@ -69,21 +65,6 @@ class CreateUserTest(unittest.TestCase):
             False
         )
         self.assertTrue(result)
-        self.assertEquals(3, send_request_mock.call_count)
-        self.assert_get_users_request(send_request_mock)
-
-        self.assert_create_user_request(send_request_mock)
-
-        self.assertEquals('http://something.com/api/v3/users/12/keys', send_request_mock.call_args_list[2][0][1])
-        self.assertEquals(
-            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
-            send_request_mock.call_args_list[2][0][2]
-        )
-        self.assertEquals('POST', send_request_mock.call_args_list[2][0][0])
-        self.assertEquals(
-            '{"id": 12, "key": "ghkjfasdkjadh", "title": "sometitle"}',
-            send_request_mock.call_args_list[2][0][3]
-        )
 
     @mock.patch('library.gitlab_user._send_request')
     def testCreateOrUpdateUser_ifNoneExistsAndSshKeyGivenAndCheckMode_dontSendCreateRequests(
@@ -105,8 +86,6 @@ class CreateUserTest(unittest.TestCase):
             True
         )
         self.assertTrue(result)
-        self.assertEquals(1, send_request_mock.call_count)
-        self.assert_get_users_request(send_request_mock)
 
     @ddt.data(
         {'username': 'testusername', 'name': 'Test', 'password': '98765btzf'},
@@ -120,9 +99,6 @@ class CreateUserTest(unittest.TestCase):
             arguments.update(input_arguments)
             with self.assertRaises(library.gitlab_user.GitlabModuleInternalException):
                 library.gitlab_user.create_or_update_user(arguments, False)
-
-            self.assertEquals(1, send_request_mock.call_count)
-            self.assert_get_users_request(send_request_mock)
 
     @ddt.data(
         {'username': 'testusername', 'name': 'Test', 'password': '98765btzf'},
@@ -138,9 +114,6 @@ class CreateUserTest(unittest.TestCase):
             arguments.update(input_arguments)
             with self.assertRaises(library.gitlab_user.GitlabModuleInternalException):
                 library.gitlab_user.create_or_update_user(arguments, True)
-
-            self.assertEquals(1, send_request_mock.call_count)
-            self.assert_get_users_request(send_request_mock)
 
     @mock.patch('library.gitlab_user._send_request')
     def testCreateOrUpdateUser_ifNoneExistsAndAdminGiven_sendCreateUserRequests(self, send_request_mock):
@@ -161,36 +134,3 @@ class CreateUserTest(unittest.TestCase):
             False
         )
         self.assertTrue(result)
-        self.assertEquals(2, send_request_mock.call_count)
-        self.assert_get_users_request(send_request_mock)
-
-        self.assertEquals('http://something.com/api/v3/users', send_request_mock.call_args_list[1][0][1])
-        self.assertEquals(
-            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
-            send_request_mock.call_args_list[1][0][2]
-        )
-        self.assertEquals('POST', send_request_mock.call_args_list[1][0][0])
-        self.assertEquals(
-            '{"username": "testusername", "admin": true, "password": "98765btzf", "name": "Test", "email": "someone@something.com"}',
-            send_request_mock.call_args_list[1][0][3]
-        )
-
-    def assert_get_users_request(self, send_request_mock):
-        self.assertEquals('http://something.com/api/v3/users', send_request_mock.call_args_list[0][1]['url'])
-        self.assertEquals(
-            {'PRIVATE-TOKEN': 'abc123'},
-            send_request_mock.call_args_list[0][1]['headers']
-        )
-        self.assertEquals('GET', send_request_mock.call_args_list[0][1]['method'])
-
-    def assert_create_user_request(self, send_request_mock):
-        self.assertEquals('http://something.com/api/v3/users', send_request_mock.call_args_list[1][0][1])
-        self.assertEquals(
-            {'PRIVATE-TOKEN': 'abc123', 'Content-Type': 'application/json'},
-            send_request_mock.call_args_list[1][0][2]
-        )
-        self.assertEquals('POST', send_request_mock.call_args_list[1][0][0])
-        self.assertEquals(
-            '{"username": "testusername", "password": "98765btzf", "name": "Test", "email": "someone@something.com"}',
-            send_request_mock.call_args_list[1][0][3]
-        )

@@ -19,7 +19,6 @@ class RemoveUserTest(unittest.TestCase):
             False
         )
         self.assertFalse(result)
-        self.assertEquals(1, send_request_mock.call_count)
 
     @mock.patch('library.gitlab_user._send_request')
     def testDeleteUser_ifExists_sendDeleteRequest(self, send_request_mock):
@@ -36,10 +35,6 @@ class RemoveUserTest(unittest.TestCase):
             False
         )
         self.assertTrue(result)
-        self.assertEquals(2, send_request_mock.call_count)
-        self.assertEquals('http://something.com/api/v3/users/12', send_request_mock.call_args[1]['url'])
-        self.assertEquals({'PRIVATE-TOKEN': 'abc123'}, send_request_mock.call_args[1]['headers'])
-        self.assertEquals('DELETE', send_request_mock.call_args[1]['method'])
 
     @mock.patch('library.gitlab_user._send_request')
     def testDeleteUser_ifNoneExistsAndCheckMode_dontSendDeleteRequest(self, send_request_mock):
@@ -53,7 +48,6 @@ class RemoveUserTest(unittest.TestCase):
             True
         )
         self.assertFalse(result)
-        self.assertEquals(1, send_request_mock.call_count)
 
     @mock.patch('library.gitlab_user._send_request')
     def testDeleteUser_ifExistsAndCheckMode_dontSendDeleteRequest(self, send_request_mock):
@@ -69,4 +63,3 @@ class RemoveUserTest(unittest.TestCase):
             True
         )
         self.assertTrue(result)
-        self.assertEquals(1, send_request_mock.call_count)
